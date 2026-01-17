@@ -33,14 +33,18 @@ app.get("/search/movie", async (req, res) => {
       }
     );
 
-    const results = response.data.results.slice(0,5).map(movie => ({
+    const movie = response.data.results[0];
+
+if (!movie) {
+  return res.status(404).json({ error: "No movie found" });
+}
+
+res.json({
   title: movie.title,
-  release_date: movie.release_date, 
+  release_date: movie.release_date,
   poster_path: movie.poster_path,
   overview: movie.overview,
-}));
-
-res.json(results);
+});
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ error: "TMDB request failed" });
@@ -52,4 +56,5 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+
 });
