@@ -35,7 +35,7 @@ app.get("/search", async (req, res) => {
         title: movie.title,
         overview: movie.overview,
         poster_path: movie.poster_path,
-        url: https://www.google.com/search?q=${encodeURIComponent(movie.title + " movie watch")}
+        url: https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " full movie")}
       });
     }
 
@@ -59,3 +59,4 @@ app.get("/search", async (req, res) => {
 app.listen(PORT, () => {
   console.log("MMFinder backend running on port " + PORT);
 });
+
