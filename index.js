@@ -1,59 +1,80 @@
-const express = require("express");
-const cors = require("cors");
 
-const app = express();
-app.use(cors());
+async function loadMovie() {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("query");
 
-// Root test route
-app.get("/", (req, res) => {
-  res.send("MMFinder backend is running ✅");
-});
-
-// MAIN SEARCH ROUTE
-app.get("/search", async (req, res) => {
-  const query = req.query.query;
+  const box = document.getElementById("resultBox");
 
   if (!query) {
-    return res.json({ error: "No query provided" });
+    box.innerHTML = "❌ No search query found.";
+    return;
   }
+
+  // Show loading
+  box.innerHTML = `
+    <div style="text-align:center;">
+      <div class="spinner"></div>
+      <p>Searching for the movie...</p>
+    </div>
+  `;
 
   try {
-    const tmdbKey = "675ba63f3db201974af6975f9e8e0a3c";
-    const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbKey}&query=${encodeURIComponent(query)}`;
+    const res = await fetch("https://mmfinder-backend.onrender.com/search?query=" + query);
+    const data = await res.json();
 
-    const fetch = (await import("node-fetch")).default;
-    const tmdbRes = await fetch(tmdbUrl);
-    const tmdbData = await tmdbRes.json();
-
-    if (tmdbData.results && tmdbData.results.length > 0) {
-      const movie = tmdbData.results[0];
-
-      return res.json({
-        title: movie.title,
-        overview: movie.overview,
-        poster: "https://image.tmdb.org/t/p/w500" + movie.poster_path,
-        year: movie.release_date ? movie.release_date.split("-")[0] : "N/A",
-        rating: movie.vote_average || "N/A",
-        links: {
-          youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " full movie")}`,
-          netflix: `https://www.netflix.com/search?q=${encodeURIComponent(movie.title)}`,
-          prime: `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${encodeURIComponent(movie.title)}`
-        }
-      });
+    if (!data.title) {
+      box.innerHTML = "❌ No movie found.";
+      return;
     }
 
-    return res.json({ error: "No movie found" });
+    box.innerHTML = `
+      <div style="margin-top:30px;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);max-width:400px;margin:auto;text-align:center;">
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+        <img src="${data.poster}" style="width:100%;border-radius:12px;" />
+
+        <h3 style="margin-top:15px;">${data.title}</h3>
+
+        <p style="font-size:14px;color:#666;">
+          📅 ${data.year} &nbsp; ⭐ ${data.rating}
+        </p>
+
+        <p style="font-size:14px;color:#555;">${data.overview}</p>
+
+        <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+
+          <a href="${data.links.youtube}" target="_blank"
+             style="padding:10px 16px;background:#ff0000;color:white;border-radius:8px;text-decoration:none;">
+             ▶ YouTube
+          </a>
+
+          <a href="${data.links.netflix}" target="_blank"
+             style="padding:10px 16px;background:#e50914;color:white;border-radius:8px;text-decoration:none;">
+             🎬 Netflix
+          </a>
+
+          <a href="${data.links.prime}" target="_blank"
+             style="padding:10px 16px;background:#00a8e1;color:white;border-radius:8px;text-decoration:none;">
+             📺 Prime Video
+          </a>
+
+        </div>
+
+        <div style="margin-top:20px;">
+          <button onclick="window.location.href='/'"
+            style="padding:10px 20px;background:#444;color:white;border:none;border-radius:8px;">
+            🔁 Search another movie
+          </button>
+        </div>
+
+      </div>
+    `;
+
+  } catch (e) {
+    box.innerHTML = "⚠ Unable to load result. Try again.";
   }
-});
+}
 
-// Start server
-app.listen(process.env.PORT || 3000, () => {
-  console.log("MMFinder backend running...");
-});
+document.addEventListener("DOMContentLoaded", loadMovie);
 
 
 
