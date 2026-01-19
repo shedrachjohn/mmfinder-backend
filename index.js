@@ -31,11 +31,38 @@ app.get("/search", async (req, res) => {
     if (tmdbData.results && tmdbData.results.length > 0) {
       const movie = tmdbData.results[0];
 
-      return res.json({
-        title: movie.title,
-        overview: movie.overview,
-        poster_path: movie.poster_path,
-        url: https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " full movie")}
+      // 🔍 GET WATCH PROVIDERS (Netflix, Prime, etc.)
+const providersUrl = https://api.themoviedb.org/3/movie/${movie.id}/watch/providers?api_key=${tmdbKey};
+const providersRes = await fetch(providersUrl);
+const providersData = await providersRes.json();
+
+let watchLinks = {
+  youtube: https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " full movie")},
+  netflix: null,
+  prime: null
+};
+
+if (providersData.results && providersData.results.US) {
+  const flatrate = providersData.results.US.flatrate || [];
+
+  flatrate.forEach(p => {
+    if (p.provider_name.toLowerCase().includes("netflix")) {
+      watchLinks.netflix = "https://www.netflix.com/search?q=" + encodeURIComponent(movie.title);
+    }
+    if (p.provider_name.toLowerCase().includes("amazon")) {
+      watchLinks.prime = "https://www.amazon.com/s?k=" + encodeURIComponent(movie.title);
+    }
+  });
+}
+
+return res.json({
+  title: movie.title,
+  overview: movie.overview,
+  poster: "https://image.tmdb.org/t/p/w500" + movie.poster_path,
+  year: movie.release_date ? movie.release_date.split("-")[0] : "N/A",
+  rating: movie.vote_average,
+  links: watchLinks
+});
       });
     }
 
@@ -59,4 +86,5 @@ app.get("/search", async (req, res) => {
 app.listen(PORT, () => {
   console.log("MMFinder backend running on port " + PORT);
 });
+
 
