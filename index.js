@@ -1,60 +1,61 @@
-require("dotenv").config();
-
 const express = require("express");
+const fetch = require("node-fetch");
 const cors = require("cors");
-const axios = require("axios");
 
 const app = express();
-
 app.use(cors());
-app.use(express.json());
 
-/* ✅ Test route (THIS IS WHAT WORKED BEFORE) */
+const PORT = process.env.PORT || 3000;
+
+// 🔹 Root route (test if backend is alive)
 app.get("/", (req, res) => {
-  res.json({ message: "MMFinder backend running 🚀" });
+  res.send("MMFinder backend is running ✅");
 });
 
-/* ✅ Movie search route (WORKING VERSION) */
-app.get("/search/movie", async (req, res) => {
-  const query = req.query.q;
+// 🔹 MAIN SEARCH ROUTE
+app.get("/search", async (req, res) => {
+  const query = req.query.query;
 
   if (!query) {
-    return res.status(400).json({ error: "Movie name is required" });
+    return res.json({ error: "No query provided" });
   }
 
   try {
-    const response = await axios.get(
-      "https://api.themoviedb.org/3/search/movie",
-      {
-        params: {
-          api_key: process.env.TMDB_API_KEY,
-          query: query,
-        },
-      }
-    );
+    // 🔍 TMDB SEARCH (Hollywood + international)
+    const tmdbKey = "675ba63f3db201974af6975f9e8e0a3c";
+    const tmdbUrl = https://api.themoviedb.org/3/search/movie?api_key=${tmdbKey}&query=${encodeURIComponent(query)};
 
-    const movie = response.data.results[0];
+    const tmdbRes = await fetch(tmdbUrl);
+    const tmdbData = await tmdbRes.json();
 
-if (!movie) {
-  return res.status(404).json({ error: "No movie found" });
-}
+    if (tmdbData.results && tmdbData.results.length > 0) {
+      const movie = tmdbData.results[0];
 
-res.json({
-  title: movie.title,
-  release_date: movie.release_date,
-  poster_path: movie.poster_path,
-  overview: movie.overview,
-});
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ error: "TMDB request failed" });
+      return res.json({
+        title: movie.title,
+        overview: movie.overview,
+        poster_path: movie.poster_path,
+        url: https://www.google.com/search?q=${encodeURIComponent(movie.title + " movie watch")}
+      });
+    }
+
+    // 🔁 NO TMDB RESULT → NOLLYWOOD FALLBACK
+    return res.json({
+      results: [
+        {
+          title: query,
+          url: https://www.youtube.com/results?search_query=${encodeURIComponent(query + " nollywood movie")}
+        }
+      ]
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-/* ✅ START SERVER (MUST BE LAST) */
-const PORT = process.env.PORT || 3000;
-
+// 🔹 START SERVER
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-
+  console.log("MMFinder backend running on port " + PORT);
 });
